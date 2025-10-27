@@ -1,41 +1,43 @@
 // app.js
 
-// ===== CONFIGURAÇÃO INICIAL (OMDB - Mantido para contexto da aula) =====
+// ===== CONFIGURAÇÃO INICIAL OMDb (Mantida da Aula) =====
 // Pegue sua chave gratuita em: http://www.omdbapi.com/apikey.aspx
 const CHAVE_API_OMDB = "eec34f73";
 const URL_BASE_OMDB = "https://www.omdbapi.com/";
 
-// ===== CONFIGURAÇÃO TMDb (NOVA API) =====
-// NOTA IMPORTANTE: Você deve obter sua própria chave TMDb em https://developer.themoviedb.org/
-const CHAVE_API_TMDB = "COLOQUE_SUA_CHAVE_TMDB_AQUI"; // Chave de API TMDb V3
+// ===== CONFIGURAÇÃO TMDb (NOVA API: The Movie Database) =====
+// IMPORTANTE: Obtenha sua chave V3 em https://developer.themoviedb.org/
+const CHAVE_API_TMDB = "d058b2f7067ea2a07cd74e0c7ee817f2"; // << COLOQUE SUA CHAVE AQUI
 const URL_BASE_TMDB = "https://api.themoviedb.org/3/";
-const URL_BASE_IMAGEM_TMDB = "https://image.tmdb.org/t/p/w500"; // URL base para posters e fotos de atores
+const URL_BASE_IMAGEM_TMDB = "https://image.tmdb.org/t/p/w500"; // URL base para posters
 
-// ===== CONEXÃO COM O HTML (ADICIONAIS para TMDb) =====
+// ===== CONEXÃO COM O HTML (ADICIONAIS) =====
 const campoBusca = document.getElementById("campo-busca");
 const listaResultados = document.getElementById("lista-resultados");
 const mensagemStatus = document.getElementById("mensagem-status");
-const seletorGenero = document.getElementById("seletor-genero"); // Novo elemento
-const seletorAno = document.getElementById("seletor-ano");     // Novo elemento
+const seletorGenero = document.getElementById("seletor-genero");
+const seletorAno = document.getElementById("seletor-ano");
+// NOVO: Campo de busca de ator
+const campoAtor = document.getElementById("campo-ator");
 
-// ===== VARIÁVEIS DE CONTROLE (MANTIDO) =====
-let termoBusca = "";      // Texto digitado pelo usuário
-let paginaAtual = 1;      // Página de resultados (a API retorna 10 ou 20 por página)
+// ===== VARIÁVEIS DE CONTROLE =====
+let termoBusca = "";
+let paginaAtual = 1;
 
-// ===== FUNÇÃO DO BOTÃO "BUSCAR" =====
+// ===== FUNÇÕES OMDb (MANTIDAS DO EXERCÍCIO ORIGINAL) =====
+
 function buscarFilmes() {
-  termoBusca = campoBusca.value.trim(); // remove espaços extras
-  paginaAtual = 1;                      // sempre começa da página 1
-  pesquisarFilmes();                    // chama a função que faz a requisição
+  termoBusca = campoBusca.value.trim();
+  paginaAtual = 1;
+  pesquisarFilmes(); // Chama a função OMDb
 }
 
-// ===== FUNÇÃO DO BOTÃO "PRÓXIMA PÁGINA" =====
+// A OMDb só suporta paginação para busca por título, não para filtros TMDb.
 function proximaPagina() {
   paginaAtual++;
   pesquisarFilmes();
 }
 
-// ===== FUNÇÃO DO BOTÃO "ANTERIOR" =====
 function paginaAnterior() {
   if (paginaAtual > 1) {
     paginaAtual--;
@@ -43,83 +45,69 @@ function paginaAnterior() {
   }
 }
 
-// ===== FUNÇÃO PRINCIPAL DE PESQUISA =====
 async function pesquisarFilmes() {
-  // Valida se o campo está vazio
   if (!termoBusca) {
-    mensagemStatus.textContent = "Digite o nome de um filme para pesquisar.";
+    mensagemStatus.textContent = "Digite o nome de um filme para pesquisar (OMDb).";
     listaResultados.innerHTML = "";
     return;
   }
 
-  // Mostra mensagem de carregando
-  mensagemStatus.textContent = "🔄 Buscando filmes, aguarde...";
+  mensagemStatus.textContent = "🔄 Buscando filmes OMDb, aguarde...";
   listaResultados.innerHTML = "";
 
   try {
-    // Monta a URL com a chave e o termo buscado
-    const url = `${URL_BASE}?apikey=${CHAVE_API}&s=${encodeURIComponent(termoBusca)}&page=${paginaAtual}`;
-    
-    // Faz a chamada na API
+    const url = `${URL_BASE_OMDB}?apikey=${CHAVE_API_OMDB}&s=${encodeURIComponent(termoBusca)}&page=${paginaAtual}`;
     const resposta = await fetch(url);
     const dados = await resposta.json();
 
-    // Verifica se encontrou algo
     if (dados.Response === "False") {
-      mensagemStatus.textContent = "Nenhum resultado encontrado.";
+      mensagemStatus.textContent = "Nenhum resultado encontrado na busca OMDb.";
       listaResultados.innerHTML = "";
       return;
     }
-
-    // Mostra os filmes na tela
-    exibirFilmes(dados.Search);
-    mensagemStatus.textContent = `Página ${paginaAtual} — mostrando resultados para "${termoBusca}"`;
+    
+    // Usa a função de exibição OMDb original
+    exibirFilmesOMDB(dados.Search);
+    mensagemStatus.textContent = `Página ${paginaAtual} — mostrando resultados OMDb para "${termoBusca}"`;
 
   } catch (erro) {
     console.error(erro);
-    mensagemStatus.textContent = "❌ Erro ao buscar dados. Verifique sua conexão.";
+    mensagemStatus.textContent = "❌ Erro ao buscar dados OMDb. Verifique sua conexão.";
   }
 }
 
-// ===== FUNÇÃO PARA MOSTRAR FILMES =====
-function exibirFilmes(filmes) {
-  listaResultados.innerHTML = ""; // limpa os resultados anteriores
-
+// FUNÇÃO ORIGINAL OMDb (simples)
+function exibirFilmesOMDB(filmes) {
+  listaResultados.innerHTML = "";
   filmes.forEach(filme => {
-    // Cria o container do card
     const div = document.createElement("div");
     div.classList.add("card");
 
-    // Se não houver pôster, usa uma imagem padrão
     const poster = filme.Poster !== "N/A"
       ? filme.Poster
       : "https://via.placeholder.com/300x450?text=Sem+Poster";
 
-    // Monta o HTML do card
     div.innerHTML = `
       <img src="${poster}" alt="Pôster do filme ${filme.Title}">
       <h3>${filme.Title}</h3>
       <p>Ano: ${filme.Year}</p>
-    `;
-
-    // Adiciona o card dentro da lista
+      `;
     listaResultados.appendChild(div);
   });
 }
 
-// app.js (Novas Funções)
 
 // =========================================================================
-// NOVO: 1. CARREGAR GÊNEROS NA INICIALIZAÇÃO (Requisito: Filmes por filtro)
+// NOVO: FUNCIONALIDADES TMDb (Filtragem e Detalhes Avançados)
 // =========================================================================
 
+// 1. Carrega a lista de gêneros para o seletor HTML
 async function carregarGeneros() {
   try {
     const url = `${URL_BASE_TMDB}genre/movie/list?api_key=${CHAVE_API_TMDB}&language=pt-BR`;
     const resposta = await fetch(url);
     const dados = await resposta.json();
     
-    // Preenche o seletor de Gênero no HTML
     dados.genres.forEach(genero => {
       if (seletorGenero) {
         const option = document.createElement("option");
@@ -130,14 +118,11 @@ async function carregarGeneros() {
     });
 
   } catch (erro) {
-    console.error("❌ Erro ao carregar gêneros do TMDb.", erro);
+    console.error("❌ Erro ao carregar gêneros do TMDb. Verifique sua chave.", erro);
   }
 }
 
-// =========================================================================
-// NOVO: 2. FUNÇÃO DE BUSCA POR FILTROS (DISCOVER) (Requisito: Filmes por filtro)
-// =========================================================================
-
+// 2. Busca filmes usando os filtros (Discover)
 async function buscarFilmesPorFiltro() {
   const generoId = seletorGenero.value;
   const ano = seletorAno.value;
@@ -149,11 +134,11 @@ async function buscarFilmesPorFiltro() {
     return;
   }
 
-  mensagemStatus.textContent = "🔄 Buscando filmes por filtro, aguarde...";
+  mensagemStatus.textContent = "🔄 Buscando filmes por filtro TMDb, aguarde...";
   listaResultados.innerHTML = "";
 
   try {
-    // Usa o endpoint /discover/movie para aplicar filtros
+    // Endpoint /discover/movie para aplicar filtros
     let url = `${URL_BASE_TMDB}discover/movie?api_key=${CHAVE_API_TMDB}&language=pt-BR&sort_by=popularity.desc&page=${paginaAtual}`;
 
     if (generoId) {
@@ -167,24 +152,21 @@ async function buscarFilmesPorFiltro() {
     const dados = await resposta.json();
 
     if (dados.total_results === 0) {
-      mensagemStatus.textContent = "Nenhum resultado encontrado com os filtros selecionados.";
+      mensagemStatus.textContent = "Nenhum resultado encontrado com os filtros TMDb selecionados.";
       return;
     }
 
+    // Usa a função de exibição TMDb (que tem o botão Detalhes)
     exibirFilmesTMDb(dados.results);
-    mensagemStatus.textContent = `Página ${paginaAtual} — ${dados.total_results} resultados encontrados.`;
+    mensagemStatus.textContent = `Página ${paginaAtual} — ${dados.total_results} resultados encontrados (TMDb).`;
 
   } catch (erro) {
     console.error(erro);
-    mensagemStatus.textContent = "❌ Erro ao buscar dados por filtro. Verifique sua chave TMDb.";
+    mensagemStatus.textContent = "❌ Erro ao buscar dados por filtro TMDb. Verifique sua chave.";
   }
 }
 
-
-// =========================================================================
-// NOVO: 3. FUNÇÃO PARA MOSTRAR FILMES TMDb (Com botão de detalhes)
-// =========================================================================
-
+// 3. Função para mostrar filmes do TMDb (com botão de detalhes)
 function exibirFilmesTMDb(filmes) {
   listaResultados.innerHTML = "";
 
@@ -192,7 +174,7 @@ function exibirFilmesTMDb(filmes) {
     const div = document.createElement("div");
     div.classList.add("card");
     
-    // Poster: A TMDb exige a URL base de imagens + o caminho do poster
+    // Poster: Concatena a URL base de imagens com o caminho do poster
     const poster = filme.poster_path
       ? `${URL_BASE_IMAGEM_TMDB}${filme.poster_path}`
       : "https://via.placeholder.com/300x450?text=Sem+Poster";
@@ -210,10 +192,7 @@ function exibirFilmesTMDb(filmes) {
   });
 }
 
-// =========================================================================
-// NOVO: 4. FUNÇÃO PARA BUSCAR DETALHES DO FILME (Requisitos: Detalhes e Atores)
-// =========================================================================
-
+// 4. Busca os detalhes e o elenco de um filme específico
 async function buscarDetalhesFilme(filmeId, titulo) {
   mensagemStatus.textContent = `🔄 Buscando detalhes de "${titulo}", aguarde...`;
   listaResultados.innerHTML = "";
@@ -225,7 +204,6 @@ async function buscarDetalhesFilme(filmeId, titulo) {
     const dadosDetalhes = await respostaDetalhes.json();
     
     // 2. Busca o elenco/créditos (atores)
-    // A API de detalhes pode ser combinada com /credits
     const urlCreditos = `${URL_BASE_TMDB}movie/${filmeId}/credits?api_key=${CHAVE_API_TMDB}&language=pt-BR`;
     const respostaCreditos = await fetch(urlCreditos);
     const dadosCreditos = await respostaCreditos.json();
@@ -240,10 +218,7 @@ async function buscarDetalhesFilme(filmeId, titulo) {
   }
 }
 
-// =========================================================================
-// NOVO: 5. FUNÇÃO PARA EXIBIR DETALHES DO FILME
-// =========================================================================
-
+// 5. Exibe os detalhes complementares e a lista de atores
 function exibirDetalhesFilme(detalhes, creditos) {
   listaResultados.innerHTML = "";
 
@@ -252,7 +227,7 @@ function exibirDetalhesFilme(detalhes, creditos) {
   
   // Lista dos 5 principais atores (Elenco)
   const atores = creditos.cast
-    .slice(0, 5)
+    .slice(0, 5) // Pega apenas os 5 primeiros
     .map(ator => `<li>${ator.name} (${ator.character})</li>`)
     .join('');
     
@@ -292,10 +267,9 @@ function exibirDetalhesFilme(detalhes, creditos) {
 }
 
 // =========================================================================
-// ATUALIZAÇÃO DA INICIALIZAÇÃO E LISTENERS
+// INICIALIZAÇÃO E LISTENERS
 // =========================================================================
 
-// Função para iniciar o script
 document.addEventListener('DOMContentLoaded', () => {
     carregarGeneros();
     
@@ -317,8 +291,96 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Nota sobre paginação: Para simplificar, as funções proximaPagina/paginaAnterior devem ser adaptadas.
-// Como elas chamam a função original (pesquisarFilmes), sugiro focar a navegação da "Etapa 3" na
-// nova busca por filtro (`buscarFilmesPorFiltro`).
-// Para isso, você precisaria de uma variável de controle para saber qual foi a última busca,
-// mas vou manter as originais para não gerar conflito com a lógica OMDb existente.
+// app.js (Novas Funções para Busca por Ator)
+
+// =========================================================================
+// NOVO: FUNÇÕES TMDb (Busca por Ator/Pessoa)
+// =========================================================================
+
+// 1. Inicia a busca pelo nome do ator e encontra seu ID
+async function buscarAtor() {
+  const nomeAtor = campoAtor.value.trim();
+  if (!nomeAtor) {
+    mensagemStatus.textContent = "Digite o nome de um ator para pesquisar.";
+    return;
+  }
+
+  mensagemStatus.textContent = `🔄 Buscando ID do ator(a) "${nomeAtor}", aguarde...`;
+  listaResultados.innerHTML = "";
+
+  try {
+    // Endpoint: /search/person para encontrar o ator
+    const urlBusca = `${URL_BASE_TMDB}search/person?api_key=${CHAVE_API_TMDB}&query=${encodeURIComponent(nomeAtor)}`;
+    
+    const resposta = await fetch(urlBusca);
+    const dados = await resposta.json();
+    
+    if (dados.results.length === 0) {
+      mensagemStatus.textContent = `Ator(a) "${nomeAtor}" não encontrado(a) na base de dados.`;
+      return;
+    }
+
+    // Pega o ID do ator mais relevante (o primeiro resultado)
+    const atorPrincipal = dados.results[0];
+    
+    // Chama a próxima função para buscar os filmes dele/dela
+    buscarCreditosDoAtor(atorPrincipal.id, atorPrincipal.name);
+
+  } catch (erro) {
+    console.error(erro);
+    mensagemStatus.textContent = "❌ Erro ao buscar o ator. Verifique sua conexão/chave TMDb.";
+  }
+}
+
+// app.js (Função corrigida e otimizada)
+
+// 2. Busca os filmes (créditos) em que o ator atuou
+async function buscarCreditosDoAtor(atorId, nomeAtor) {
+  mensagemStatus.textContent = `🔄 Buscando filmes de "${nomeAtor}", aguarde...`;
+
+  try {
+    // Endpoint: /person/{person_id}/movie_credits
+    // NOTE: Este endpoint já retorna apenas 'movie' (filmes) e não 'tv' (séries).
+    const urlCreditos = `${URL_BASE_TMDB}person/${atorId}/movie_credits?api_key=${CHAVE_API_TMDB}&language=pt-BR`;
+    
+    const resposta = await fetch(urlCreditos);
+    const dados = await resposta.json();
+    
+    // -------------------------------------------------------------------
+    // MUDANÇAS AQUI:
+    // -------------------------------------------------------------------
+
+    // 1. Pega apenas o array 'cast' (o que ele/ela atuou)
+    const filmesDoAtor = dados.cast;
+
+    if (!filmesDoAtor || filmesDoAtor.length === 0) {
+      mensagemStatus.textContent = `Nenhum crédito de atuação encontrado para "${nomeAtor}".`;
+      return;
+    }
+
+    // 2. Filtra e organiza:
+    const filmesFiltrados = filmesDoAtor
+      // Filtra para remover itens sem data de lançamento ou sem título.
+      .filter(filme => filme.release_date && filme.title) 
+      .sort((a, b) => {
+        // Ordena por ano de lançamento decrescente (mais recentes primeiro)
+        const anoA = a.release_date ? parseInt(a.release_date.substring(0, 4)) : 0;
+        const anoB = b.release_date ? parseInt(b.release_date.substring(0, 4)) : 0;
+        return anoB - anoA;
+      });
+
+    if (filmesFiltrados.length === 0) {
+      mensagemStatus.textContent = `Nenhum filme válido encontrado para "${nomeAtor}".`;
+      return;
+    }
+
+    // Reutiliza a função de exibição do TMDb
+    exibirFilmesTMDb(filmesFiltrados);
+    mensagemStatus.textContent = `Filmes em que **${nomeAtor}** atuou: ${filmesFiltrados.length} resultados.`;
+
+  } catch (erro) {
+    console.error(erro);
+    // Erro comum aqui é a chave de API:
+    mensagemStatus.textContent = "❌ Erro ao buscar os créditos do ator. Verifique se a sua CHAVE_API_TMDB está correta.";
+  }
+}
